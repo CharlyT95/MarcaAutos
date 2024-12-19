@@ -5,8 +5,11 @@
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-nanoserver-1809 AS base
 WORKDIR /app
+EXPOSE 80
 EXPOSE 8080
-EXPOSE 8081
+
+ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh /wait-for-it.sh
+RUN chmod +x /wait-for-it.sh
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0-nanoserver-1809 AS build
 ARG BUILD_CONFIGURATION=Release
@@ -26,5 +29,6 @@ RUN dotnet publish "./MarcasAutosAPI.API.csproj" -c %BUILD_CONFIGURATION% -o /ap
 
 FROM base AS final
 WORKDIR /app
+COPY --from=base /wait-for-it.sh /wait-for-it.sh
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "MarcasAutosAPI.API.dll"]
+ENTRYPOINT ["/wait-for-it.sh", "postgres:5432", "--", "dotnet", "Test.Api.dll"]
